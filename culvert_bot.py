@@ -1147,7 +1147,7 @@ async def search_class(ctx: SlashContext, class_name: str):
                     "inline": True
                 },
                 {
-                    "name": "Class",
+                    "name": "Level",
                     "value": levels_field,
                     "inline": True
                 },
