@@ -113,11 +113,11 @@ async def on_ready():
             name="guild_member_discord",
             description="The discord ID of the member.",
             required=False,
-            type=OptionType.INTEGER
+            type=OptionType.STRING
         )
     ]
 )
-async def add_member(ctx: SlashContext, guild_member: str, guild_member_class: str, guild_member_discord: OptionType.INTEGER=None):  
+async def add_member(ctx: SlashContext, guild_member: str, guild_member_class: str, guild_member_discord: str=None):  
     if collection_names.find_one({"name_lower": guild_member.lower()}) is None:
         member_discord_id = guild_member_discord if guild_member_discord else None
         member_data = {"name": guild_member.strip(), "class": guild_member_class.lower().strip(), "discord_id": member_discord_id, "name_lower": guild_member.strip().lower()}
@@ -210,7 +210,7 @@ async def remove_member(ctx: SlashContext, guild_member: str):
             name="guild_member_discord_updated",
             description="Updated member discord ID.",
             required=False,
-            type=OptionType.INTEGER
+            type=OptionType.STRING
         ),
         SlashCommandOption(
             name="level_updated",
@@ -220,7 +220,7 @@ async def remove_member(ctx: SlashContext, guild_member: str):
         )
     ]
 )
-async def update_member(ctx: SlashContext, guild_member: str, guild_member_updated: str=None, class_updated: str=None, discord_updated: OptionType.INTEGER=None, level_updated: int=None):  
+async def update_member(ctx: SlashContext, guild_member: str, guild_member_updated: str=None, class_updated: str=None, discord_updated: str=None, level_updated: int=None):  
     query = {"name_lower": guild_member.lower()}
     member = collection_names.find_one(query)
     if member:
