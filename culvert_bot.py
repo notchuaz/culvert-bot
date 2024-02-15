@@ -108,7 +108,7 @@ async def on_ready():
             description="Class of the guild member. Enter as it would appear on the guild page, i.e., Arch Mage (F/P).",
             required=True,
             type=OptionType.STRING
-        ),
+         ),
         SlashCommandOption(
             name="guild_member_discord",
             description="The discord ID of the member.",
@@ -207,7 +207,7 @@ async def remove_member(ctx: SlashContext, guild_member: str):
             type=OptionType.STRING
         ),
         SlashCommandOption(
-            name="guild_member_discord_updated",
+            name="discord_updated",
             description="Updated member discord ID.",
             required=False,
             type=OptionType.STRING
