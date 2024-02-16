@@ -1109,7 +1109,7 @@ async def search_class(ctx: SlashContext, class_name: str):
         title_class = f"Top Culvert Scores for all {class_name.title()}s in the Guild"
         description_class = "These are the most recently logged scores."
         color_class = "#2bff00"
-        thumbnail_class = embed_thumbnails[class_name]
+        thumbnail_class = embed_thumbnails[class_name.lower()]
         for index, member in enumerate(class_scores_list_sorted):
             member_case_correction = collection_names.find_one({"name_lower": member["name"].lower()})
             levels_field += f'{member["level"]}\n'
