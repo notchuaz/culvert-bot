@@ -170,7 +170,8 @@ async def remove_member(ctx: SlashContext, guild_member: str):
     member = collection_names.find_one(query)
     if member:
         removed_member = collection_names.delete_one(query)
-        if removed_member.deleted_count == 1:
+        removed_member_scores = collection_scores.delete_one({"name": guild_member})
+        if removed_member.deleted_count == 1 and removed_member_scores.deleted_count == 1:
             title_success = 'Removal successful.'
             color_success = '#2bff00'
             thumbnail_success = embed_thumbnails["sugar_done"]
@@ -975,115 +976,115 @@ async def search_by_member(ctx: SlashContext, name: str):
     ]
 )
 async def search_by_date(ctx: SlashContext, date: str):
-    title_fail = 'Well this is unfortunate.'
-    description_fail = f"Command disabled. Debugging this as we speak (no im not)."
-    color_fail = '#FF0000'
-    thumbnail_fail = embed_thumbnails["sugar_fail"]
-    embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
-    await ctx.send(embed=embed_fail)
-    # def is_valid_date(date_str):
-    #     try:
-    #         datetime.strptime(date_str, '%Y-%m-%d')
-    #         return True
-    #     except ValueError:
-    #         return False
+    # title_fail = 'Well this is unfortunate.'
+    # description_fail = f"Command disabled. Debugging this as we speak (no im not)."
+    # color_fail = '#FF0000'
+    # thumbnail_fail = embed_thumbnails["sugar_fail"]
+    # embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
+    # await ctx.send(embed=embed_fail)
+    def is_valid_date(date_str):
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
     
-    # if not is_valid_date(date):
-    #     title_fail = 'Date is invalid.'
-    #     description_fail = 'Enter the date in this format: YYYY-MM-DD.'
-    #     color_fail = '#FF0000'
-    #     thumbnail_fail = embed_thumbnails["sugar_fail"]
-    #     embed_fail = create_embed(title_fail, description=description_fail, color=color_fail, thumbnail=thumbnail_fail)
-    #     await ctx.send(embed=embed_fail)
-    #     return -1
+    if not is_valid_date(date):
+        title_fail = 'Date is invalid.'
+        description_fail = 'Enter the date in this format: YYYY-MM-DD.'
+        color_fail = '#FF0000'
+        thumbnail_fail = embed_thumbnails["sugar_fail"]
+        embed_fail = create_embed(title_fail, description=description_fail, color=color_fail, thumbnail=thumbnail_fail)
+        await ctx.send(embed=embed_fail)
+        return -1
         
-    # player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
-    # player_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in player_scores_data]
-    # players_to_display = []
+    player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
+    player_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in player_scores_data]
+    players_to_display = []
     
-    # for member in player_scores_list:
-    #     for logged_date in member["date"]:
-    #         if date == logged_date:
-    #             players_to_display.append(member)
-    #             continue
-    # if len(players_to_display) > 0:
-    #     players_to_display_sorted = sorted(players_to_display, key=lambda x: x["score"][x["date"].index(date)], reverse=True)
-    #     names_field = ''
-    #     class_field = ''
-    #     scores_field = ''
-    #     embeds_pages = []
-    #     title_data = f'Top Culvert Scores on {datetime.strptime(date, "%Y-%m-%d").strftime("%B %d, %Y")}'
-    #     description_data = "There are at most 17 entries per page."
-    #     color_data = '#2bff00'
-    #     thumbnail_data = embed_thumbnails["sugar_done"]
-    #     for index, member in enumerate(players_to_display_sorted):
-    #         member_case_correction = collection_names.find_one({"name_lower": member["name"].lower()})
-    #         class_field += f'{member["class"].title()}\n'
-    #         scores_field += f'{"{:,}".format(member["score"][member["date"].index(date)])}\n'
-    #         if index == 0:
-    #             names_field += f'{member_case_correction["name"]} \U0001F947\n'
-    #         elif index == 1:
-    #             names_field += f'{member_case_correction["name"]} \U0001F948\n'
-    #         elif index == 2:
-    #             names_field += f'{member_case_correction["name"]} \U0001F949\n'
-    #         else:
-    #             names_field += f'{member_case_correction["name"]}\n'
+    for member in player_scores_list:
+        for logged_date in member["date"]:
+            if date == logged_date:
+                players_to_display.append(member)
+                continue
+    if len(players_to_display) > 0:
+        players_to_display_sorted = sorted(players_to_display, key=lambda x: x["score"][x["date"].index(date)], reverse=True)
+        names_field = ''
+        class_field = ''
+        scores_field = ''
+        embeds_pages = []
+        title_data = f'Top Culvert Scores on {datetime.strptime(date, "%Y-%m-%d").strftime("%B %d, %Y")}'
+        description_data = "There are at most 17 entries per page."
+        color_data = '#2bff00'
+        thumbnail_data = embed_thumbnails["sugar_done"]
+        for index, member in enumerate(players_to_display_sorted):
+            member_case_correction = collection_names.find_one({"name_lower": member["name"].lower()})
+            class_field += f'{member["class"].title()}\n'
+            scores_field += f'{"{:,}".format(member["score"][member["date"].index(date)])}\n'
+            if index == 0:
+                names_field += f'{member_case_correction["name"]} \U0001F947\n'
+            elif index == 1:
+                names_field += f'{member_case_correction["name"]} \U0001F948\n'
+            elif index == 2:
+                names_field += f'{member_case_correction["name"]} \U0001F949\n'
+            else:
+                names_field += f'{member_case_correction["name"]}\n'
 
-    #         if (index+1) % 17 == 0:
-    #             fields_data = [
-    #                 {
-    #                     "name": "Name",
-    #                     "value": names_field,
-    #                     "inline": True
-    #                 },
-    #                 {
-    #                     "name": "Class",
-    #                     "value": class_field,
-    #                     "inline": True
-    #                 },
-    #                 {
-    #                     "name": "Score",
-    #                     "value": scores_field,
-    #                     "inline": True
-    #                 }
-    #             ]
-    #             embeds_pages.append(create_embed(title_data, description=description_data, color=color_data, thumbnail=thumbnail_data, field=fields_data))
-    #             names_field = ''
-    #             class_field = ''
-    #             scores_field = ''
+            if (index+1) % 17 == 0:
+                fields_data = [
+                    {
+                        "name": "Name",
+                        "value": names_field,
+                        "inline": True
+                    },
+                    {
+                        "name": "Class",
+                        "value": class_field,
+                        "inline": True
+                    },
+                    {
+                        "name": "Score",
+                        "value": scores_field,
+                        "inline": True
+                    }
+                ]
+                embeds_pages.append(create_embed(title_data, description=description_data, color=color_data, thumbnail=thumbnail_data, field=fields_data))
+                names_field = ''
+                class_field = ''
+                scores_field = ''
 
-    #     if names_field != '':
-    #         fields_data = [
-    #             {
-    #                 "name": "Name",
-    #                 "value": names_field,
-    #                 "inline": True
-    #             },
-    #             {
-    #                 "name": "Class",
-    #                 "value": class_field,
-    #                 "inline": True
-    #             },
-    #             {
-    #                 "name": "Score",
-    #                 "value": scores_field,
-    #                 "inline": True
-    #             }
-    #         ]
-    #         embeds_pages.append(create_embed(title_data, description=description_data, color=color_data, thumbnail=thumbnail_data, field=fields_data))
+        if names_field != '':
+            fields_data = [
+                {
+                    "name": "Name",
+                    "value": names_field,
+                    "inline": True
+                },
+                {
+                    "name": "Class",
+                    "value": class_field,
+                    "inline": True
+                },
+                {
+                    "name": "Score",
+                    "value": scores_field,
+                    "inline": True
+                }
+            ]
+            embeds_pages.append(create_embed(title_data, description=description_data, color=color_data, thumbnail=thumbnail_data, field=fields_data))
 
-    #     if len(embeds_pages) > 1:
-    #         paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=180)
-    #         await paginator.send(ctx)
-    #     else:
-    #         await ctx.send(embed=embeds_pages[0])
-    # else:
-    #     title_fail = 'No culvert scores were logged on this date.'
-    #     description_fail = f"The date, {date}, does not have any culvert scores connected to it."
-    #     color_fail = '#FF0000'
-    #     thumbnail_fail = embed_thumbnails["sugar_fail"]
-    #     embed_fail = create_embed(title_fail, color=color_fail, thumbnail=thumbnail_fail)
-    #     await ctx.send(embed=embed_fail)
+        if len(embeds_pages) > 1:
+            paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=180)
+            await paginator.send(ctx)
+        else:
+            await ctx.send(embed=embeds_pages[0])
+    else:
+        title_fail = 'No culvert scores were logged on this date.'
+        description_fail = f"The date, {date}, does not have any culvert scores connected to it."
+        color_fail = '#FF0000'
+        thumbnail_fail = embed_thumbnails["sugar_fail"]
+        embed_fail = create_embed(title_fail, color=color_fail, thumbnail=thumbnail_fail)
+        await ctx.send(embed=embed_fail)
 
 @search_cmd.subcommand(
     sub_cmd_name="class", 
@@ -1107,7 +1108,7 @@ async def search_class(ctx: SlashContext, class_name: str):
         levels_field = ''
         scores_field = ''
         title_class = f"Top Culvert Scores for all {class_name.title()}s in the Guild"
-        description_class = "These are the most recently logged scores."
+        description_class = f"These were scored on {datetime.strptime(class_scores_list[0]["date"][-1], "%Y-%m-%d").strftime("%B %d, %Y")}."
         color_class = "#2bff00"
         thumbnail_class = embed_thumbnails[class_name.lower()]
         for index, member in enumerate(class_scores_list_sorted):
