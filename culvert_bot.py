@@ -173,9 +173,10 @@ async def remove_member(ctx: SlashContext, guild_member: str):
         removed_member_scores = collection_scores.delete_one({"name": guild_member})
         if removed_member.deleted_count == 1 and removed_member_scores.deleted_count == 1:
             title_success = 'Removal successful.'
+            description_success = f'Successfully removed {guild_member}.'
             color_success = '#2bff00'
             thumbnail_success = embed_thumbnails["sugar_done"]
-            embed_success = create_embed(title_success, color=color_success, thumbnail=thumbnail_success)
+            embed_success = create_embed(title_success, color=color_success, description=description_success, thumbnail=thumbnail_success)
             await ctx.send(embed=embed_success)
     else:
         title_failure = 'Unable to remove.'
