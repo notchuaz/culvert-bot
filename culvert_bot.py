@@ -10,6 +10,7 @@ from interactions import Client, Intents, OptionType, Embed, File, Permissions, 
 from interactions.ext.paginators import Paginator
 from culvert_processor import get_culvert_scores
 from culvert_name_matcher import link_names
+from openai_generator import story_generator
 from pymongo.mongo_client import MongoClient
 from datetime import datetime
 from PIL import Image
@@ -79,9 +80,9 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR)
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR)
-search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.")
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
+search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.", scopes=[1205582538614112256])
 
 @listen()
 async def on_ready():
@@ -170,7 +171,7 @@ async def remove_member(ctx: SlashContext, guild_member: str):
     member = collection_names.find_one(query)
     if member:
         removed_member = collection_names.delete_one(query)
-        removed_member_scores = collection_scores.delete_one({"name": guild_member})
+        removed_member_scores = collection_scores.delete_one({"name": guild_member.lower()})
         if removed_member.deleted_count == 1 and removed_member_scores.deleted_count == 1:
             title_success = 'Removal successful.'
             description_success = f'Successfully removed {guild_member}.'
@@ -844,6 +845,68 @@ async def addOne(ctx: SlashContext, name: str, date: str, score: int):
         embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
         await ctx.send(embed=embed_fail)
         return -1
+
+@culvert_cmd.subcommand(sub_cmd_name="announce", sub_cmd_description="Announces the highlights of culvert this week.")
+async def announce(ctx: SlashContext):
+    player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
+    player_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in player_scores_data]
+    scores_sorted_curweek = sorted(player_scores_list, key=lambda x: x["score"][-1], reverse=True)
+
+    rank1_member = collection_names.find_one({"name_lower": scores_sorted_curweek[0]['name']})
+    rank1_story = f'<@!{rank1_member['discord_id']}>' if rank1_member['discord_id'] is not None else rank1_member['name']
+    rank1_story_value = scores_sorted_curweek[0]['score'][-1]
+    rank2_member = collection_names.find_one({"name_lower": scores_sorted_curweek[1]['name']})
+    rank2_story = f'<@!{rank2_member['discord_id']}>' if rank2_member['discord_id'] is not None else rank2_member['name']
+    rank2_story_value = scores_sorted_curweek[1]['score'][-1]
+    rank3_member = collection_names.find_one({"name_lower": scores_sorted_curweek[2]['name']})
+    rank3_story = f'<@!{rank3_member['discord_id']}>' if rank3_member['discord_id'] is not None else rank3_member['name']
+    rank3_story_value = scores_sorted_curweek[2]['score'][-1]
+
+    scores_lastweek = []
+    lowest_diff = None
+    lowest_diff_indices = (None, None)
+    biggest_improvement_member = None
+    biggest_improvement = None
+    for member in player_scores_list:
+        if len(member['score']) >= 2:
+            scores_lastweek.append(member)
+            if member['score'][-1] == 0 or member['score'][-2] == 0:
+                continue
+            improvement = member['score'][-1] - member['score'][-2]
+            if biggest_improvement is None or improvement > biggest_improvement:
+                biggest_improvement_member = member
+                biggest_improvement = improvement
+    biggest_improvement_member_name = collection_names.find_one({"name_lower": biggest_improvement_member['name']})
+    biggest_improvement_member_story = f'@<!{biggest_improvement_member_name['discord_id']}>' if biggest_improvement_member_name['discord_id'] is not None else biggest_improvement_member_name['name']
+
+    scores_lastweek_sorted = sorted(scores_lastweek, key=lambda x: x["score"][-2], reverse=True)
+    scores_differences_lastweek = []
+    for i in range(1, len(scores_lastweek_sorted)):
+        if scores_lastweek_sorted[i]['score'][-2] == 0 or scores_lastweek_sorted[i-1]['score'][-2] == 0:
+            continue
+        current_diff = scores_lastweek_sorted[i]['score'][-2] - scores_lastweek_sorted[i-1]['score'][-2]
+        scores_differences_lastweek.append(current_diff)
+        if lowest_diff is None or abs(current_diff) < abs(lowest_diff):
+            lowest_diff = current_diff
+            lowest_diff_indices = (i-1, i)
+    lowest_diff_member0 = collection_names.find_one({"name_lower": scores_lastweek_sorted[lowest_diff_indices[0]]['name']})
+    lowest_diff_member1 = collection_names.find_one({"name_lower": scores_lastweek_sorted[lowest_diff_indices[1]]['name']})
+    lowest_diff_story0 = f'<@!{lowest_diff_member0['discord_id']}>' if lowest_diff_member0['discord_id'] is not None else lowest_diff_member0['name']
+    lowest_diff_story1 = f'<@!{lowest_diff_member1['discord_id']}>' if lowest_diff_member1['discord_id'] is not None else lowest_diff_member1['name']
+    
+    lowest_diff_member0_score_currweek = collection_scores.find_one({"name":scores_lastweek_sorted[lowest_diff_indices[0]]['name']})['score'][-1]
+    lowest_diff_member1_score_currweek = collection_scores.find_one({"name":scores_lastweek_sorted[lowest_diff_indices[1]]['name']})['score'][-1]
+    title_waitGPT = "Generating the story!"
+    description_waitGPT = "This could take up to 30 seconds."
+    color_waitGPT = "#FF9900"
+    thumbnail_waitGPT = embed_thumbnails["sugar_inprogress"]
+    embed_waitGPT = create_embed(title_waitGPT, color=color_waitGPT, description=description_waitGPT, thumbnail=thumbnail_waitGPT)
+    embed_waitGPT_message = await ctx.send(embed=embed_waitGPT)
+    await ctx.send(f"{story_generator(rank1_story, rank1_story_value, rank2_story, rank2_story_value, rank3_story, rank3_story_value,
+                    biggest_improvement_member_story, biggest_improvement,
+                    lowest_diff_story0, lowest_diff_member0_score_currweek, lowest_diff_story1, lowest_diff_member1_score_currweek)}\n\n Good job this week everyone! Go Saga!")
+    await embed_waitGPT_message.delete()
+
 
 @search_cmd.subcommand(
     sub_cmd_name="member", 
