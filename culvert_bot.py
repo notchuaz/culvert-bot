@@ -909,10 +909,11 @@ async def announce(ctx: SlashContext):
     await embed_waitGPT_message.delete()
 
 @culvert_cmd.subcommand(sub_cmd_name="download", sub_cmd_description="Downloads the latest culvert scores read by the bot sorted in alphabetical order by member.")
-async def announce(ctx: SlashContext):
+async def download(ctx: SlashContext):
     latest_data = collection_scores.find({}, {'name': 1, 'score': 1})
     latest_scores = [{"name": doc["name"], "score": doc["score"][-1]} for doc in latest_data]
-    df = pd.DataFrame(latest_scores)
+    latest_scores_sorted = sorted(latest_scores, key=lambda x: x["name"])
+    df = pd.DataFrame(latest_scores_sorted)
     csv_file_path = 'latest_scores.csv'
     df.to_csv(csv_file_path, index=False)
     await ctx.send(file=File(csv_file_path))
