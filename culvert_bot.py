@@ -80,9 +80,9 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
-search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.", scopes=[1205582538614112256])
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR)
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR)
+search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
 async def on_ready():
