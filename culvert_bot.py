@@ -4,6 +4,7 @@ import certifi
 import math
 import json
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from dotenv import load_dotenv
 from interactions import Client, Intents, OptionType, Embed, File, Permissions, SlashContext, SlashCommand, SlashCommandOption, listen, slash_default_member_permission
@@ -81,7 +82,7 @@ collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
 member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR)
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR)
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
 search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
@@ -907,6 +908,14 @@ async def announce(ctx: SlashContext):
                     lowest_diff_story0, lowest_diff_member0_score_currweek, lowest_diff_story1, lowest_diff_member1_score_currweek)}\n\n Good job this week everyone! Go Saga!")
     await embed_waitGPT_message.delete()
 
+@culvert_cmd.subcommand(sub_cmd_name="download", sub_cmd_description="Downloads the latest culvert scores read by the bot sorted in alphabetical order by member.")
+async def announce(ctx: SlashContext):
+    latest_data = collection_scores.find({}, {'name': 1, 'score': 1})
+    latest_scores = [{"name": doc["name"], "score": doc["score"][-1]} for doc in latest_data]
+    df = pd.DataFrame(latest_scores)
+    csv_file_path = 'latest_scores.csv'
+    df.to_csv(csv_file_path, index=False)
+    await ctx.send(file=File(csv_file_path))
 
 @search_cmd.subcommand(
     sub_cmd_name="member", 
