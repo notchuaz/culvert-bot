@@ -82,8 +82,8 @@ collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
 member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR)
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR)
-search_cmd = SlashCommand(name="search", description="Search the database by member, date, or class for culvert scores.")
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
+search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
 async def on_ready():
@@ -507,11 +507,6 @@ async def updateAll(
         embed_member_mismatch = create_embed(title_member_mismatch, description=description_member_mismatch, color=color_member_mismatch, thumbnail=thumbnail_member_mismatch, field=fields_member_mismatch)
         await embed_update_message.edit(embed=embed_member_mismatch)
     else:
-        title_success = "Culvert scores read and logged!"
-        color_success = "#2BFF00"
-        thumbnail_success = embed_thumbnails["sugar_done"]
-        embed_success = create_embed(title_success, color=color_success, thumbnail=thumbnail_success)
-        await embed_update_message.edit(embed=embed_success)
         linked_names = link_names(culvert_data, player_name_list)
 
         for entry in linked_names:
@@ -519,7 +514,6 @@ async def updateAll(
             scores_doc = collection_scores.find_one(query)
             if scores_doc:
                 date_to_add = entry[2][4] if not specified_date else specified_date
-                print(f'Added: {entry[1]}')
                 result = collection_scores.update_one(
                     {"name": entry[1].lower()},
                     {
@@ -535,13 +529,18 @@ async def updateAll(
             else:
                 result = collection_scores.insert_one(
                     {
-                        "name": entry[1],
+                        "name": entry[1].lower(),
                         "class": entry[2][1],
                         "level": entry[2][2],
                         "score": [entry[2][3]],
                         "date": [date_to_add]
                     }
                 )
+        title_success = "Culvert scores read and logged!"
+        color_success = "#2BFF00"
+        thumbnail_success = embed_thumbnails["sugar_done"]
+        embed_success = create_embed(title_success, color=color_success, thumbnail=thumbnail_success)
+        await embed_update_message.edit(embed=embed_success)
 
 @culvert_cmd.subcommand(
     sub_cmd_name="update_one",
@@ -669,15 +668,14 @@ async def removeAll(ctx: SlashContext, target_date: str):
         await ctx.send(embed=embed_fail)
         return -1
     
+    title_inprogress = "Removing scores from the specified date!"
+    description_inprogress = "This may take a few seconds."
+    color_inprogress = "#FF9900"
+    thumbnail_inprogress = embed_thumbnails["sugar_inprogress"]
+    embed_inprogress = create_embed(title_inprogress, color=color_inprogress, description=description_inprogress, thumbnail=thumbnail_inprogress)
+    embed_message = await ctx.send(embed=embed_inprogress)
     members = collection_scores.find({"date": target_date})
     if collection_scores.count_documents({"date": target_date}):
-        title_inprogress = "Removing scores from the specified date!"
-        description_inprogress = "This may take a few seconds."
-        color_inprogress = "#FF9900"
-        thumbnail_inprogress = embed_thumbnails["sugar_inprogress"]
-        embed_inprogress = create_embed(title_inprogress, color=color_inprogress, description=description_inprogress, thumbnail=thumbnail_inprogress)
-        embed_message = await ctx.send(embed=embed_inprogress)
-
         for member in members:
             score_date_pairs = list(zip(member["score"], member["date"]))
             filtered_pairs = [pair for pair in score_date_pairs if pair[1] != target_date]
@@ -854,13 +852,13 @@ async def announce(ctx: SlashContext):
     scores_sorted_curweek = sorted(player_scores_list, key=lambda x: x["score"][-1], reverse=True)
 
     rank1_member = collection_names.find_one({"name_lower": scores_sorted_curweek[0]['name']})
-    rank1_story = f'<@!{rank1_member['discord_id']}>' if rank1_member['discord_id'] is not None else rank1_member['name']
+    rank1_story = f"<@!{rank1_member['discord_id']}>" if rank1_member['discord_id'] is not None else rank1_member['name']
     rank1_story_value = scores_sorted_curweek[0]['score'][-1]
     rank2_member = collection_names.find_one({"name_lower": scores_sorted_curweek[1]['name']})
-    rank2_story = f'<@!{rank2_member['discord_id']}>' if rank2_member['discord_id'] is not None else rank2_member['name']
+    rank2_story = f"<@!{rank2_member['discord_id']}>" if rank2_member['discord_id'] is not None else rank2_member['name']
     rank2_story_value = scores_sorted_curweek[1]['score'][-1]
     rank3_member = collection_names.find_one({"name_lower": scores_sorted_curweek[2]['name']})
-    rank3_story = f'<@!{rank3_member['discord_id']}>' if rank3_member['discord_id'] is not None else rank3_member['name']
+    rank3_story = f"<@!{rank3_member['discord_id']}>" if rank3_member['discord_id'] is not None else rank3_member['name']
     rank3_story_value = scores_sorted_curweek[2]['score'][-1]
 
     scores_lastweek = []
@@ -878,7 +876,7 @@ async def announce(ctx: SlashContext):
                 biggest_improvement_member = member
                 biggest_improvement = improvement
     biggest_improvement_member_name = collection_names.find_one({"name_lower": biggest_improvement_member['name']})
-    biggest_improvement_member_story = f'@<!{biggest_improvement_member_name['discord_id']}>' if biggest_improvement_member_name['discord_id'] is not None else biggest_improvement_member_name['name']
+    biggest_improvement_member_story = f"@<!{biggest_improvement_member_name['discord_id']}>" if biggest_improvement_member_name['discord_id'] is not None else biggest_improvement_member_name['name']
 
     scores_lastweek_sorted = sorted(scores_lastweek, key=lambda x: x["score"][-2], reverse=True)
     scores_differences_lastweek = []
@@ -892,8 +890,8 @@ async def announce(ctx: SlashContext):
             lowest_diff_indices = (i-1, i)
     lowest_diff_member0 = collection_names.find_one({"name_lower": scores_lastweek_sorted[lowest_diff_indices[0]]['name']})
     lowest_diff_member1 = collection_names.find_one({"name_lower": scores_lastweek_sorted[lowest_diff_indices[1]]['name']})
-    lowest_diff_story0 = f'<@!{lowest_diff_member0['discord_id']}>' if lowest_diff_member0['discord_id'] is not None else lowest_diff_member0['name']
-    lowest_diff_story1 = f'<@!{lowest_diff_member1['discord_id']}>' if lowest_diff_member1['discord_id'] is not None else lowest_diff_member1['name']
+    lowest_diff_story0 = f"<@!{lowest_diff_member0['discord_id']}>" if lowest_diff_member0['discord_id'] is not None else lowest_diff_member0['name']
+    lowest_diff_story1 = f"<@!{lowest_diff_member1['discord_id']}>" if lowest_diff_member1['discord_id'] is not None else lowest_diff_member1['name']
     
     lowest_diff_member0_score_currweek = collection_scores.find_one({"name":scores_lastweek_sorted[lowest_diff_indices[0]]['name']})['score'][-1]
     lowest_diff_member1_score_currweek = collection_scores.find_one({"name":scores_lastweek_sorted[lowest_diff_indices[1]]['name']})['score'][-1]
@@ -903,10 +901,27 @@ async def announce(ctx: SlashContext):
     thumbnail_waitGPT = embed_thumbnails["sugar_inprogress"]
     embed_waitGPT = create_embed(title_waitGPT, color=color_waitGPT, description=description_waitGPT, thumbnail=thumbnail_waitGPT)
     embed_waitGPT_message = await ctx.send(embed=embed_waitGPT)
-    await ctx.send(f"{story_generator(rank1_story, rank1_story_value, rank2_story, rank2_story_value, rank3_story, rank3_story_value,
-                    biggest_improvement_member_story, biggest_improvement,
-                    lowest_diff_story0, lowest_diff_member0_score_currweek, lowest_diff_story1, lowest_diff_member1_score_currweek)}\n\n Good job this week everyone! Go Saga!")
+    await ctx.send(f"{story_generator(rank1_story, rank1_story_value, rank2_story, rank2_story_value, rank3_story, rank3_story_value, biggest_improvement_member_story, biggest_improvement, lowest_diff_story0, lowest_diff_member0_score_currweek, lowest_diff_story1, lowest_diff_member1_score_currweek)}\n\n Good job this week everyone! Go Saga!")
     await embed_waitGPT_message.delete()
+
+@culvert_cmd.subcommand(sub_cmd_name="changes")
+async def changes(ctx: SlashContext):
+    player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
+    player_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in player_scores_data]
+    
+    greatest_change = []
+    for member in player_scores_list:
+        if len(member['score']) > 1 and member['score'][-1] != 0:
+            highest_score = max(member['score'][:-1])
+            if highest_score == 0:
+                continue
+            change = member['score'][-1] - highest_score
+            change_percent = change/highest_score*100
+            discord_id = collection_names.find_one({'name_lower': member['name']})['discord_id']
+            greatest_change.append({"name": member['name'], "change": change_percent, "discord_id": discord_id})
+    greatest_change_sorted = sorted(greatest_change, key=lambda x: x['change'], reverse=True)
+    for i in range(0, len(greatest_change_sorted)):
+        print(f"{greatest_change_sorted[i]['name']} {round(greatest_change_sorted[i]['change'], 2)} {greatest_change_sorted[i]['discord_id']}")
 
 @culvert_cmd.subcommand(sub_cmd_name="download", sub_cmd_description="Downloads the latest culvert scores read by the bot sorted in alphabetical order by member.")
 async def download(ctx: SlashContext):
@@ -1056,6 +1071,7 @@ async def search_by_date(ctx: SlashContext, date: str):
     # thumbnail_fail = embed_thumbnails["sugar_fail"]
     # embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
     # await ctx.send(embed=embed_fail)
+    await ctx.defer()
     def is_valid_date(date_str):
         try:
             datetime.strptime(date_str, '%Y-%m-%d')
@@ -1182,7 +1198,7 @@ async def search_class(ctx: SlashContext, class_name: str):
         levels_field = ''
         scores_field = ''
         title_class = f"Top Culvert Scores for all {class_name.title()}s in the Guild"
-        description_class = f"These were scored on {datetime.strptime(class_scores_list[0]["date"][-1], "%Y-%m-%d").strftime("%B %d, %Y")}."
+        description_class = f"These were scored on {datetime.strptime(class_scores_list[0]['date'][-1], '%Y-%m-%d').strftime('%B %d, %Y')}."
         color_class = "#2bff00"
         thumbnail_class = embed_thumbnails[class_name.lower()]
         for index, member in enumerate(class_scores_list_sorted):
