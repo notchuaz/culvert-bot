@@ -58,7 +58,7 @@ def get_culvert_scores(image_url):
         image = cv2.imdecode(image_as_np_array, cv2.IMREAD_COLOR)
 
     (h, w) = image.shape[:2]
-    resized_image = cv2.resize(image, (1700, int(h*3.5)))
+    resized_image = cv2.resize(image, (1700, 1500))
     gray_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     _, binary_inv_thresh = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     kernel = np.ones((2,2), np.uint8)
@@ -69,8 +69,9 @@ def get_culvert_scores(image_url):
 
     tesseract_custom_config = r'--oem 3 --psm 6'
     lines = pytesseract.image_to_string(final_image, config=tesseract_custom_config).split('\n')
-    names_list = [f"{remove_accents(item.split()[0])}" for item in lines if len(item) > 1]
-    entry_data = [' '.join(item.split()[1:]) for item in lines if len(item) > 1]
+    filtered_lines = [line for line in lines if line.strip()]
+    names_list = [f"{remove_accents(item.split()[0])}" for item in filtered_lines if len(item) > 1]
+    entry_data = [' '.join(item.split()[1:]) for item in filtered_lines if len(item) > 1]
 
     class_level_list= []
     score_list = []
@@ -92,12 +93,12 @@ def get_culvert_scores(image_url):
         for name, class_level, score in zip(names_list, class_level_list, score_list)
     ]
 
-    # for index, item in enumerate(lines):
-    #     print(f"{index}: {item}")
-    # for index, item in enumerate(processed_list):
-    #     print(f"{index}: {item}")
+    for index, item in enumerate(filtered_lines):
+        print(f"{index}: {item}")
+    for index, item in enumerate(processed_list):
+        print(f"{index}: {item}")
 
-    if len(lines)-1 != len(processed_list):
+    if len(filtered_lines) != len(processed_list):
         return False
 
     return processed_list
