@@ -1307,7 +1307,7 @@ async def search_by_member(ctx: SlashContext, name: str):
         await paginator.message.edit(embed=paginator.pages[0])
     else:
         title_error = "No match found."
-        description_error = f"{name} does not exist in the database."
+        description_error = f"{name} does not exist in the database or a score hasn't been logged for you yet!"
         color_error = "#FF0000"
         thumbnail_error = embed_thumbnails["sugar_fail"]
         embed_error = create_embed(title_error, color=color_error, description=description_error, thumbnail=thumbnail_error)
