@@ -25,7 +25,7 @@ __Culvert-Based Commands__
     * __Usage:__ The screenshot of the scores should ONLY ENCAPSULATE THE AREA AS SHOWN BELOW! Including any other pieces of text could cause the bot to misinterpret information and cause errors. __Currently, it is recommended that you save your screenshots (easiest to copy paste them into discord and then dragging them to your desktop) just in case there is a misinterpretation and the bot requests for a new set of screenshots.__ 
         ![culvert screenshot example](https://i.imgur.com/7OdK6Ko.png)
 * `/culvert ping [culv_sc_(1-12)]` -> Upload 1 to 12 (depending on how many members your guild has) screenshots of the guild culvert page.
-    *__Usage:__ The screenshots provided will be exactly the same as they appeared in `/culvert update_all`. This will then ping every person that currently has their discord registered and a current culvert score of 0.
+    * __Usage:__ The screenshots provided will be exactly the same as they appeared in `/culvert update_all`. This will then ping every person that currently has their discord registered and a current culvert score of 0.
 * `/culvert update_one [name][date][score_update]` -> Updates the culvert score for one member at a specific date.
     * __Usage:__ Do this if there happened to be any changes to someone's culvert score or if it was read in incorrectly.
 * `/culvert remove_all [date]` -> Removes the culvert scores for all members at a specific date.
