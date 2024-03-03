@@ -82,8 +82,8 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
@@ -91,10 +91,11 @@ async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
 
-# @base_cmd.subcommand(sub_cmd_name="clear", sub_cmd_description="Clears the database. DEV USE ONLY!")
+# @member_cmd.subcommand(sub_cmd_name="clear", sub_cmd_description="Clears the database. DEV USE ONLY!")
 # async def clear(ctx: SlashContext):
-#     collection_scores.delete_many({})
 #     await ctx.send("Cleared score database.")
+#     await ctx.send(1206497400684945438, content="Hello world!")
+
 
 @member_cmd.subcommand(
     sub_cmd_name="add", 
@@ -396,6 +397,179 @@ async def view_member(ctx: SlashContext):
         await paginator.send(ctx)
 
 @culvert_cmd.subcommand(
+    sub_cmd_name="ping", 
+    sub_cmd_description="Pings all the people that have yet to run.",
+    options=[
+        SlashCommandOption(
+            name="culv_sc_1",
+            description="Culvert screenshot.",
+            required=True,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_2",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_3",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_4",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_5",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_6",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_7",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_8",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_9",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_10",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_11",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        ),
+        SlashCommandOption(
+            name="culv_sc_12",
+            description="Culvert screenshot.",
+            required=False,
+            type=OptionType.ATTACHMENT
+        )
+    ]
+)
+async def ping(
+    ctx: SlashContext, 
+    culv_sc_1: OptionType.ATTACHMENT,         
+    culv_sc_2: OptionType.ATTACHMENT = None,  
+    culv_sc_3: OptionType.ATTACHMENT = None,  
+    culv_sc_4: OptionType.ATTACHMENT = None,     
+    culv_sc_5: OptionType.ATTACHMENT = None,     
+    culv_sc_6: OptionType.ATTACHMENT = None,     
+    culv_sc_7: OptionType.ATTACHMENT = None,     
+    culv_sc_8: OptionType.ATTACHMENT = None,     
+    culv_sc_9: OptionType.ATTACHMENT = None,     
+    culv_sc_10: OptionType.ATTACHMENT = None,    
+    culv_sc_11: OptionType.ATTACHMENT = None,    
+    culv_sc_12: OptionType.ATTACHMENT = None):
+    def get_discord_id(list, name):
+        for member in list:
+            if member['name'] == name:
+                return member['discord_id']
+    culvert_data = []
+    player_name_data = collection_names.find({}, {"name": 1, "class": 1, "discord_id": 1})
+    player_name_list = [{"name": doc["name"], "class": doc["class"], "discord_id": doc["discord_id"]} for doc in player_name_data]
+
+    title_update = "Reading your culvert scores!"
+    description_update = "This could take up to 30 seconds."
+    color_update = "#FF9900"
+    thumbnail_update = embed_thumbnails["sugar_inprogress"]
+    embed_update = create_embed(title_update, color=color_update, description=description_update, thumbnail=thumbnail_update)
+    embed_update_message = await ctx.send(embed=embed_update)
+
+    for index in range(1, 13):
+        culv_sc_var = f'culv_sc_{index}'
+        culv_sc_img = locals().get(culv_sc_var)
+        if culv_sc_img is not None:
+            image_url = culv_sc_img.url
+            culv_sc_read = get_culvert_scores(image_url)
+            if culv_sc_read:
+                culvert_data.extend(get_culvert_scores(image_url))
+            else:
+                title_screenshot_mess = 'Messy Screenshot!'
+                description_screenshot_mess = f'Screenshot #{index} might be messy. Try changing the area of which you take the screenshot.'
+                color_screenshot_mess = '#FF0000'
+                thumbnail_screenshot_mess = embed_thumbnails["sugar_fail"]
+                embed_screenshot_mess = create_embed(title_screenshot_mess, description=description_screenshot_mess, color=color_screenshot_mess, thumbnail=thumbnail_screenshot_mess)
+                await embed_update_message.edit(embed=embed_screenshot_mess)
+                return -1
+    names_flat = [sublist[0] for sublist in culvert_data if sublist]
+    if len(names_flat) != len(set(names_flat)):
+        title_duplicate_entry = 'Duplicate Entry!'
+        description_duplicate_entry = 'Did you accidentally upload the same screenshot twice? There appears to be at least 2 entries of the same culvert score.'
+        color_duplicate_entry = '#FF0000'
+        thumbnail_duplicate_entry = embed_thumbnails["sugar_fail"]
+        embed_duplicate_entry = create_embed(title_duplicate_entry, description=description_duplicate_entry, color=color_duplicate_entry, thumbnail=thumbnail_duplicate_entry)
+        await embed_update_message.edit(embed=embed_duplicate_entry)
+    elif len(culvert_data) != collection_names.count_documents({}):
+        title_member_mismatch = 'Member mismatch!'
+        description_member_mismatch = 'The number of guild members currently logged and the number of culvert scores read are not equal! Check to see if all your guild members are accounted for! Also make sure that your screenshots capture the whole culvert page! \n\n Use /cb member [add, remove, update, search] commands to help!'
+        color_member_mismatch = '#FF0000'
+        thumbnail_member_mismatch = embed_thumbnails["sugar_fail"]
+        fields_member_mismatch = [
+            {
+                "name": "# of Culvert Scores Read",
+                "value": len(culvert_data),
+                "inline": True
+            },
+            {
+                "name": "# of Guild Members Logged",
+                "value": collection_names.count_documents({}),
+                "inline": True
+            }
+        ]
+        embed_member_mismatch = create_embed(title_member_mismatch, description=description_member_mismatch, color=color_member_mismatch, thumbnail=thumbnail_member_mismatch, field=fields_member_mismatch)
+        await embed_update_message.edit(embed=embed_member_mismatch)
+    else:
+        linked_names = link_names(culvert_data, player_name_list)
+        channel = bot.get_channel(1163804160009977856)
+        names_ping = "Don't forget to do your culvert please!!\n\n"
+        if channel:
+            for entry in linked_names:
+                if entry[2][3] != 0:
+                    continue
+                discord_id = get_discord_id(player_name_list, entry[1])
+                if discord_id is None:
+                    continue
+                print(f'{entry[1]} : {discord_id}')
+                names_ping += f'<@{discord_id}> '
+            await channel.send(names_ping)
+                
+            title_success = "Read the scores! Pinging the sandbaggers!"
+            color_success = "#2BFF00"
+            thumbnail_success = embed_thumbnails["sugar_done"]
+            embed_success = create_embed(title_success, color=color_success, thumbnail=thumbnail_success)
+            await embed_update_message.edit(embed=embed_success)
+        else:
+            print("channel not found")
+
+@culvert_cmd.subcommand(
     sub_cmd_name="update_all", 
     sub_cmd_description="Updates the database with the culvert scores provided.",
     options=[
@@ -493,7 +667,7 @@ async def updateAll(
     culv_sc_10: OptionType.ATTACHMENT = None,    
     culv_sc_11: OptionType.ATTACHMENT = None,    
     culv_sc_12: OptionType.ATTACHMENT = None,
-    specified_date: OptionType.STRING = None,):   
+    specified_date: OptionType.STRING = None):   
     def is_valid_date(date_str):
         try:
             datetime.strptime(date_str, '%Y-%m-%d')
