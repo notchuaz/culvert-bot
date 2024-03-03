@@ -4,7 +4,7 @@ CulvertBot is a bot for Discord servers (__currently only made for Saga's discor
 # Features
 
 ### Admin-Only Commands
-Only those with administrator priviledges or view audit log (willing to change this one) priviledges can use these commands. You can also set your own permissions by going into Server Settings -> Integrations -> Culvert Bot and overwrite the bot's permission's there for specific users or roles.
+Only those with administrator priviledges can use these commands. You can also set your own permissions by going into Server Settings -> Integrations -> Culvert Bot and overwrite the bot's permission's there for specific users or roles.
 
 __Member-Based Commands__
 
