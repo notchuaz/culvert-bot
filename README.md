@@ -16,6 +16,8 @@ __Member-Based Commands__
     * __Usage:__ Use when a member changes any one of the aforementioned fields. Updating the level is mainly used to fix bot misinterpretation. Level tracking should normally be handled by the bot.
 * `/member search [name]` -> Search for a member in the database by their name. This will return the basic information of the member.
     * __Usage:__ Use this if you need to check certain fields of a member or to see if they exist.
+* `/member view` -> Returns the number of members logged and displays all the names of members in alphabetical order.
+    * __Usage:__ Use this to compare the database to the current guild members
 
 __Culvert-Based Commands__
 
@@ -30,7 +32,9 @@ __Culvert-Based Commands__
     * __Usage:__ Similar to the previous command, except will only remove one entry.
 * `/culvert add_one [name][date][score]` -> Adds a culvert score-date pair for a specified member.
     * __Usage:__ Use just in case a score needs to be added manually.
+* `/culvert changes` -> Displays the top 5 members with the largest improvement from their previous PR this week.
+
 ### Public Commands
-* `/search [name]` -> Returns a generated graph and history of culvert scores for the specified member. The scores are sorted from most recent to earliest.
-* `/search [date]` -> Returns the logged culvert scores on a specified date sorted from highest to lowest.
-* `/search [class]` -> Returns the most recent culvert scores logged for a specific class.
+* `/saga [name]` -> Returns a generated graph and history of culvert scores for the specified member. The scores are sorted from most recent to earliest.
+* `/saga [date]` -> Returns the logged culvert scores on a specified date sorted from highest to lowest.
+* `/saga [class]` -> Returns the most recent culvert scores logged for a specific class.
