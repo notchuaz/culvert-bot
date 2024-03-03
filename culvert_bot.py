@@ -3,6 +3,7 @@ import io
 import certifi
 import math
 import json
+from matplotlib.image import thumbnail
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -962,7 +963,7 @@ async def announce(ctx: SlashContext):
     await ctx.send(f"{story_generator(rank1_story, rank1_story_value, rank2_story, rank2_story_value, rank3_story, rank3_story_value, biggest_improvement_member_story, biggest_improvement, lowest_diff_story0, lowest_diff_member0_score_currweek, lowest_diff_story1, lowest_diff_member1_score_currweek)}\n\n Good job this week everyone! Go Saga!")
     await embed_waitGPT_message.delete()
 
-@culvert_cmd.subcommand(sub_cmd_name="changes")
+@culvert_cmd.subcommand(sub_cmd_name="changes", sub_cmd_description="Returns the top 5 biggest improvements from previous PR.")
 async def changes(ctx: SlashContext):
     player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
     player_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in player_scores_data]
@@ -978,8 +979,36 @@ async def changes(ctx: SlashContext):
             discord_id = collection_names.find_one({'name_lower': member['name']})['discord_id']
             greatest_change.append({"name": member['name'], "change": change_percent, "discord_id": discord_id})
     greatest_change_sorted = sorted(greatest_change, key=lambda x: x['change'], reverse=True)
-    for i in range(0, len(greatest_change_sorted)):
-        print(f"{greatest_change_sorted[i]['name']} {round(greatest_change_sorted[i]['change'], 2)} {greatest_change_sorted[i]['discord_id']}")
+
+    name_list = ''
+    change_list = ''
+    discord_list = ''
+    for i in range(0, 5):
+        name_list += f'{greatest_change_sorted[i]['name']}\n'
+        change_list += f'{round(greatest_change_sorted[i]['change'], 2)}%\n'
+        discord_list += f'{greatest_change_sorted[i]['discord_id']}\n'
+    title_changes = "Top 5 Improvements from PR."
+    color_changes = '#2bff00'
+    thumbnail_changes = embed_thumbnails["sugar_done"]
+    field_changes = [
+        {
+            "name": "IGN",
+            "value": name_list,
+            "inline": True
+        },
+        {
+            "name": "Percent Change",
+            "value": change_list,
+            "inline": True
+        },
+        {
+            "name": "Discord ID",
+            "value": discord_list,
+            "inline": True
+        }
+    ]
+    embed_list = create_embed(title=title_changes, color=color_changes, thumbnail=thumbnail_changes, field=field_changes)
+    await ctx.send(embed=embed_list)
 
 @culvert_cmd.subcommand(sub_cmd_name="download", sub_cmd_description="Downloads the latest culvert scores read by the bot sorted in alphabetical order by member.")
 async def download(ctx: SlashContext):
