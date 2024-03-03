@@ -66,6 +66,8 @@ def create_embed(title, description="", color="", author="", thumbnail="", foote
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 URI = os.getenv('APP_URI')
+SAGA_SERVER_ID = os.getenv('SAGA_SERVER_ID')
+CULVERT_REMINDER_CH_ID = os.getenv('CULVERT_REMINDER_CH_ID')
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -82,20 +84,14 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
-
-# @member_cmd.subcommand(sub_cmd_name="clear", sub_cmd_description="Clears the database. DEV USE ONLY!")
-# async def clear(ctx: SlashContext):
-#     await ctx.send("Cleared score database.")
-#     await ctx.send(1206497400684945438, content="Hello world!")
-
 
 @member_cmd.subcommand(
     sub_cmd_name="add", 
@@ -548,7 +544,7 @@ async def ping(
         await embed_update_message.edit(embed=embed_member_mismatch)
     else:
         linked_names = link_names(culvert_data, player_name_list)
-        channel = bot.get_channel(1163804160009977856)
+        channel = bot.get_channel(CULVERT_REMINDER_CH_ID)
         names_ping = "Don't forget to do your culvert please!!\n\n"
         if channel:
             for entry in linked_names:
