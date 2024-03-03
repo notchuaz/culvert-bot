@@ -81,8 +81,8 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.DEFAULT)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR)
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1162977790832955432])
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[1205582538614112256])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
 
 @listen()
@@ -335,6 +335,64 @@ async def search_member(ctx: SlashContext, guild_member: str):
         embed_failure = Embed(title_failure, color=color_failure, thumbnail=thumbnail_failure)
         await ctx.send(embed=embed_failure)
         return -1
+
+@member_cmd.subcommand(sub_cmd_name="view", sub_cmd_description="View the details of the database.")
+async def view_member(ctx: SlashContext):
+    document_count = db_culvert["player-names"].count_documents({})
+    most_recent_document = collection_names.find().sort('_id', -1).limit(1)
+    names_sorted = collection_names.find().sort("name", 1)
+    embeds_pages = []
+    try:
+        document_recent = next(most_recent_document)
+    except StopIteration:
+        print("No documents found.")
+
+    title_details = "Details of the current database."
+    color_details = "#2bff00"
+    thumbnail_details = embed_thumbnails["sugar_done"]
+    fields_details = [
+        {
+            "name": "Total Members Logged",
+            "value": document_count,
+            "inline": True
+        },
+        {
+            "name": "Most Recently Logged Member",
+            "value": document_recent["name"],
+            "inline": True
+        }
+    ]
+    embeds_pages.append(create_embed(title_details, color=color_details, thumbnail=thumbnail_details, field=fields_details))
+
+    names_list = [doc["name"] for doc in names_sorted]
+    names_field = ""
+    for index, name in enumerate(names_list):
+        names_field += f'{name}\n'
+        if (index+1) % 17 == 0:
+                description_details = "List of members."
+                fields_names = [
+                    {
+                        "name": "Members",
+                        "value": names_field,
+                        "inline": True
+                    }
+                ]
+                embeds_pages.append(create_embed(title_details, description=description_details, color=color_details, thumbnail=thumbnail_details, field=fields_names))
+                names_field = ''
+    if names_field != '':
+        description_details = "List of members."
+        fields_names = [
+                    {
+                        "name": "Members",
+                        "value": names_field,
+                        "inline": True
+                    }
+                ]
+        embeds_pages.append(create_embed(title_details, description=description_details, color=color_details, thumbnail=thumbnail_details, field=fields_names))
+        names_field = ''
+
+        paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=120)
+        await paginator.send(ctx)
 
 @culvert_cmd.subcommand(
     sub_cmd_name="update_all", 
