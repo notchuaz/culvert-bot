@@ -1,5 +1,5 @@
 # CulvertBot
-CulvertBot is a bot for Discord servers built on top of [interactions.py](https://interactions-py.github.io/interactions.py/). This bot is a semi-automatic culvert score tracker for Maplestory guilds. Utilizing PyTesseract, guild admins can use screenshots of their guild pages to log a guild member's name, class, level, and culvert score. Users can then query the bot for information on the guild's culvert scores.
+CulvertBot is a bot for Discord servers (__currently only made for Saga's discord__) built on top of [interactions.py](https://interactions-py.github.io/interactions.py/). This bot is a semi-automatic culvert score tracker for Maplestory guilds. Utilizing PyTesseract, guild admins can use screenshots of their guild pages to log a guild member's name, class, level, and culvert score. Users can then query the bot for information on the guild's culvert scores.
 
 # Features
 
