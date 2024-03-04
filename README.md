@@ -37,6 +37,8 @@ __Culvert-Based Commands__
 * `/culvert changes` -> Displays the top 5 members with the largest improvement from their previous PR this week.
 
 ### Public Commands
-* `/saga [name]` -> Returns a generated graph and history of culvert scores for the specified member. The scores are sorted from most recent to earliest.
-* `/saga [date]` -> Returns the logged culvert scores on a specified date sorted from highest to lowest. Shows the total score logged on that date.
-* `/saga [class]` -> Returns the most recent culvert scores logged for a specific class.
+* `/saga member [name]` -> Returns a generated graph and history of culvert scores for the specified member. The scores are sorted from most recent to earliest.
+* `/saga date [date]` -> Returns the logged culvert scores on a specified date sorted from highest to lowest. Shows the total score logged on that date.
+* `/saga class [class]` -> Returns the most recent culvert scores logged for a specific class.
+* `/saga list` -> Returns a list of all the dates that were logged. Used as a reference for the `/saga date` command.
+* `/saga guild` -> Returns a generated graph and history of culverted scores for the entire guild. The scores are sorted from earliest to the most recent.
