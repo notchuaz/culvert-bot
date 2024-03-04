@@ -68,6 +68,8 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 URI = os.getenv('APP_URI')
 SAGA_SERVER_ID = os.getenv('SAGA_SERVER_ID')
 CULVERT_REMINDER_CH_ID = os.getenv('CULVERT_REMINDER_CH_ID')
+CULVERT_RAID_BOSS = os.getenv('CULVERT_RAID_BOSS')
+CULVERT_RAID_ASSISSTANT = os.getenv('CULVERT_RAID_ASSISSTANT')
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -83,15 +85,29 @@ db_culvert = db_client['culvert-score-database']
 collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
-bot = Client(intents=Intents.DEFAULT)
+bot = Client(intents=Intents.PRIVILEGED | Intents.GUILDS)
 member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
+# test_cmd = SlashCommand(name="test", scopes=[])
 
 @listen()
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
+
+# @test_cmd.subcommand(
+#     sub_cmd_name="addrole",
+#     options=[
+#         SlashCommandOption(
+#             name="role",
+#             type=OptionType.ROLE,
+#             required=True
+#         )
+#     ]
+# )
+# async def test(ctx: SlashContext):
+    
 
 @member_cmd.subcommand(
     sub_cmd_name="add", 
@@ -682,8 +698,8 @@ async def updateAll(
             return -1
 
     culvert_data = []
-    player_name_data = collection_names.find({}, {"name": 1, "class": 1})
-    player_name_list = [{"name": doc["name"], "class": doc["class"]} for doc in player_name_data]
+    player_name_data = collection_names.find({}, {"name": 1, "class": 1, "discord_id": 1, "name_lower": 1})
+    player_name_list = [{"name": doc["name"], "class": doc["class"], "discord_id": doc["discord_id"], "name_lower": doc["name_lower"]} for doc in player_name_data]
 
     title_update = "Reading your culvert scores!"
     description_update = "This could take up to 30 seconds."
@@ -736,9 +752,26 @@ async def updateAll(
         embed_member_mismatch = create_embed(title_member_mismatch, description=description_member_mismatch, color=color_member_mismatch, thumbnail=thumbnail_member_mismatch, field=fields_member_mismatch)
         await embed_update_message.edit(embed=embed_member_mismatch)
     else:
-        linked_names = link_names(culvert_data, player_name_list)
+        place = 1
+        linked_names = sorted(link_names(culvert_data, player_name_list), key=lambda x: x[2][3], reverse=True)
+        members_raidboss = ctx.guild.get_role(CULVERT_RAID_BOSS).members
+        members_raidassistant = ctx.guild.get_role(CULVERT_RAID_ASSISSTANT).members
+
+        for member in members_raidboss:
+            await member.remove_role(CULVERT_RAID_BOSS)
+        for member in members_raidassistant:
+            await member.remove_role(CULVERT_RAID_ASSISSTANT)
 
         for entry in linked_names:
+            for member in player_name_list:
+                if member["name_lower"] == entry[1].lower():
+                    if member["discord_id"]:
+                        if place == 1:
+                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_BOSS)
+                        elif place >= 2 and place <= 6:
+                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_ASSISSTANT)
+                        place += 1
+
             query = {"name": entry[1].lower()}
             scores_doc = collection_scores.find_one(query)
             if scores_doc:
@@ -1359,11 +1392,14 @@ async def search_by_date(ctx: SlashContext, date: str):
         names_field = ''
         class_field = ''
         scores_field = ''
+        total_score = 0
         embeds_pages = []
         title_data = f'Top Culvert Scores on {datetime.strptime(date, "%Y-%m-%d").strftime("%B %d, %Y")}'
-        description_data = "There are at most 17 entries per page."
         color_data = '#2bff00'
         thumbnail_data = embed_thumbnails["sugar_done"]
+        for index, member in enumerate(players_to_display_sorted):
+            total_score += member["score"][member["date"].index(date)]
+        description_data = f'The total score on this date was: {"{:,}".format(total_score)}!'
         for index, member in enumerate(players_to_display_sorted):
             member_case_correction = collection_names.find_one({"name_lower": member["name"].lower()})
             class_field += f'{member["class"].title()}\n'
