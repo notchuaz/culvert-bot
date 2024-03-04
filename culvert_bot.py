@@ -90,26 +90,26 @@ collection_names = db_culvert['player-names']
 bot = Client(intents=Intents.PRIVILEGED | Intents.GUILDS)
 member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
-search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
-test_cmd = SlashCommand(name="test", scopes=[1162977790832955432])
+search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.", scopes=[SAGA_SERVER_ID])
+# test_cmd = SlashCommand(name="test", scopes=[])
 
 @listen()
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
 
-@test_cmd.subcommand(
-    sub_cmd_name="addrole",
-    options=[
-        SlashCommandOption(
-            name="role",
-            type=OptionType.ROLE,
-            required=True
-        )
-    ]
-)
-async def test(ctx: SlashContext):
-    print(ctx.guild.get_member(215949023956172800).roles)
+# @test_cmd.subcommand(
+#     sub_cmd_name="addrole",
+#     options=[
+#         SlashCommandOption(
+#             name="role",
+#             type=OptionType.ROLE,
+#             required=True
+#         )
+#     ]
+# )
+# async def test(ctx: SlashContext):
+#     print(ctx.guild.get_member().roles)
 
 @member_cmd.subcommand(
     sub_cmd_name="add", 
@@ -1579,5 +1579,51 @@ async def search_class(ctx: SlashContext, class_name: str):
         thumbnail_fail = embed_thumbnails["sugar_fail"]
         embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
         await ctx.send(embed=embed_fail)
-        
+
+@search_cmd.subcommand(
+    sub_cmd_name="list",
+    sub_cmd_description="Lists the dates where culvert scores were logged."
+)
+async def search_list(ctx: SlashContext):
+    player_score_data = collection_scores.find({}, {"date": 1})
+    player_score_list = [{"date": doc["date"]} for doc in player_score_data]
+    embed_pages = []
+    dates_field = ''
+    dates = set()
+    for member in player_score_list:
+        for date in member["date"]:
+            dates.add(date)
+    dates = sorted(dates, reverse=True)
+    title_list = "Dates Where Scores Were Logged"
+    description_list = "These are organized from latest to earliest. This is a reference for using the `/saga date` command."
+    color_list = "#2bff00"
+    thumbnail_list = embed_thumbnails["sugar_done"]
+    for index, date in enumerate(dates):
+        dates_field += f'{date}\n'
+        if (index+1) % 10 == 0:
+            fields_list = [
+                {
+                    "name": "Date",
+                    "value": dates_field,
+                    "inline": True
+                }
+            ]
+            embed_pages.append(create_embed(title_list, description=description_list, color=color_list, thumbnail=thumbnail_list, field=fields_list))
+            dates_field = ''
+    if dates_field != '':
+        fields_list = [
+            {
+                "name": "Date",
+                "value": dates_field,
+                "inline": True
+            }
+        ]
+        embed_pages.append(create_embed(title_list, description=description_list, color=color_list, thumbnail=thumbnail_list, field=fields_list))
+        dates_field = ''
+    if len(embed_pages) > 1:
+        paginator = Paginator.create_from_embeds(bot, *embed_pages, timeout=180)
+        await paginator.send(ctx)
+    else:
+        await ctx.send(embed=embed_pages[0])
+
 bot.start(TOKEN)
