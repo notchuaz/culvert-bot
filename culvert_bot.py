@@ -89,25 +89,25 @@ bot = Client(intents=Intents.PRIVILEGED | Intents.GUILDS)
 member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.")
-# test_cmd = SlashCommand(name="test", scopes=[])
+test_cmd = SlashCommand(name="test", scopes=[1162977790832955432])
 
 @listen()
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
 
-# @test_cmd.subcommand(
-#     sub_cmd_name="addrole",
-#     options=[
-#         SlashCommandOption(
-#             name="role",
-#             type=OptionType.ROLE,
-#             required=True
-#         )
-#     ]
-# )
-# async def test(ctx: SlashContext):
-    
+@test_cmd.subcommand(
+    sub_cmd_name="addrole",
+    options=[
+        SlashCommandOption(
+            name="role",
+            type=OptionType.ROLE,
+            required=True
+        )
+    ]
+)
+async def test(ctx: SlashContext):
+    print(ctx.guild.get_member(215949023956172800).roles)
 
 @member_cmd.subcommand(
     sub_cmd_name="add", 
@@ -567,7 +567,7 @@ async def ping(
                 if entry[2][3] != 0:
                     continue
                 discord_id = get_discord_id(player_name_list, entry[1])
-                if discord_id is None:
+                if discord_id is None or discord_id == 0:
                     continue
                 print(f'{entry[1]} : {discord_id}')
                 names_ping += f'<@{discord_id}> '
@@ -765,13 +765,29 @@ async def updateAll(
         for entry in linked_names:
             for member in player_name_list:
                 if member["name_lower"] == entry[1].lower():
-                    if member["discord_id"]:
-                        if place == 1:
-                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_BOSS)
-                        elif place >= 2 and place <= 6:
-                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_ASSISTANT)
-                        place += 1
-
+                    admin = 0
+                    if member["discord_id"] is not None and member["discord_id"] != "0":
+                        if ctx.guild.get_member(member["discord_id"]) is None:
+                            query = {"discord_id": member["discord_id"]}
+                            member_update = collection_names.find_one(query)
+                            if member_update:
+                                member_discord_id = 0
+                                member_data = {"$set": 
+                                                {
+                                                    "discord_id": member_discord_id
+                                                }
+                                            }
+                                updated_member = collection_names.update_one(query, member_data)
+                        else:
+                            for role in ctx.guild.get_member(member["discord_id"]).roles:
+                                if role.id == 1209284355063676928 or role.id == 1209283608398012436:
+                                    admin = 1
+                            if admin != 1:
+                                if place == 1:
+                                    await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_BOSS)
+                                elif place >= 2 and place <= 6:
+                                    await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_ASSISTANT)
+                                place += 1
             query = {"name": entry[1].lower()}
             scores_doc = collection_scores.find_one(query)
             if scores_doc:
