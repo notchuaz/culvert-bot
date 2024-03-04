@@ -69,7 +69,7 @@ URI = os.getenv('APP_URI')
 SAGA_SERVER_ID = os.getenv('SAGA_SERVER_ID')
 CULVERT_REMINDER_CH_ID = os.getenv('CULVERT_REMINDER_CH_ID')
 CULVERT_RAID_BOSS = os.getenv('CULVERT_RAID_BOSS')
-CULVERT_RAID_ASSISSTANT = os.getenv('CULVERT_RAID_ASSISSTANT')
+CULVERT_RAID_ASSISTANT = os.getenv('CULVERT_RAID_ASSISTANT')
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -755,12 +755,12 @@ async def updateAll(
         place = 1
         linked_names = sorted(link_names(culvert_data, player_name_list), key=lambda x: x[2][3], reverse=True)
         members_raidboss = ctx.guild.get_role(CULVERT_RAID_BOSS).members
-        members_raidassistant = ctx.guild.get_role(CULVERT_RAID_ASSISSTANT).members
+        members_raidassistant = ctx.guild.get_role(CULVERT_RAID_ASSISTANT).members
 
         for member in members_raidboss:
             await member.remove_role(CULVERT_RAID_BOSS)
         for member in members_raidassistant:
-            await member.remove_role(CULVERT_RAID_ASSISSTANT)
+            await member.remove_role(CULVERT_RAID_ASSISTANT)
 
         for entry in linked_names:
             for member in player_name_list:
@@ -769,7 +769,7 @@ async def updateAll(
                         if place == 1:
                             await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_BOSS)
                         elif place >= 2 and place <= 6:
-                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_ASSISSTANT)
+                            await ctx.guild.get_member(member["discord_id"]).add_role(CULVERT_RAID_ASSISTANT)
                         place += 1
 
             query = {"name": entry[1].lower()}
