@@ -67,6 +67,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 URI = os.getenv('APP_URI')
 SAGA_SERVER_ID = os.getenv('SAGA_SERVER_ID')
+TEST_SERVER_ID = os.getenv('TEST_SERVER_ID')
 CULVERT_REMINDER_CH_ID = os.getenv('CULVERT_REMINDER_CH_ID')
 CULVERT_RAID_BOSS = os.getenv('CULVERT_RAID_BOSS')
 CULVERT_RAID_ASSISTANT = os.getenv('CULVERT_RAID_ASSISTANT')
@@ -88,9 +89,9 @@ collection_scores = db_culvert['player-scores']
 collection_names = db_culvert['player-names']
 
 bot = Client(intents=Intents.PRIVILEGED | Intents.GUILDS)
-member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
-culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID])
-search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.", scopes=[SAGA_SERVER_ID])
+member_cmd = SlashCommand(name="member", description="Add, remove, update, or search members in the database.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID, TEST_SERVER_ID])
+culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID, TEST_SERVER_ID])
+search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.", scopes=[SAGA_SERVER_ID, TEST_SERVER_ID])
 # test_cmd = SlashCommand(name="test", scopes=[])
 
 @listen()
@@ -1317,7 +1318,7 @@ async def search_by_member(ctx: SlashContext, name: str):
                 scores_field = ''
                 dates_field = ''
         if scores_field != '':
-            description_data = "All logged scores sorted from most recent to earliest"
+            description_data = "All logged scores sorted from most recent to earliest."
             fields_data = [
                 {
                     "name": "Date",
@@ -1334,7 +1335,7 @@ async def search_by_member(ctx: SlashContext, name: str):
             scores_field = ''
             dates_field = ''
 
-        paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=120)
+        paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=180)
         await paginator.send(ctx)
 
         x = member["date"]
@@ -1625,5 +1626,92 @@ async def search_list(ctx: SlashContext):
         await paginator.send(ctx)
     else:
         await ctx.send(embed=embed_pages[0])
+
+@search_cmd.subcommand(
+    sub_cmd_name="guild",
+    sub_cmd_description="Displays the overall score of the entire guild over time. Members who have left are not included."
+)
+async def search_guild(ctx: SlashContext):
+    player_score_data = collection_scores.find({}, {"score": 1, "date": 1})
+    player_score_list = [{"score": doc["score"], "date": doc["date"]} for doc in player_score_data]
+    dates = set()
+    total_scores = []
+    embed_pages = []
+    for member in player_score_list:
+        for date in member["date"]:
+            dates.add(date)
+    dates = sorted(dates)
+    score_on_date = 0
+    for date in dates:
+        for player in player_score_list:
+            for index, player_date in enumerate(player["date"]):
+                if date == player_date:
+                    score_on_date += player["score"][index]
+        total_scores.append(score_on_date)
+        score_on_date = 0
+
+    title_guild = "Saga's Total Culvert Scores Over Time"
+    description_guild = "The total score of our combined guild members per week. Raw numbers are on the next page."
+    color_guild = '#2bff00'
+    thumbnail_guild = embed_thumbnails["sugar_done"]
+    embed_graph = create_embed(title_guild, description=description_guild, color=color_guild, thumbnail=thumbnail_guild)
+    embed_pages.append(embed_graph)
+
+    dates_field = ''
+    scores_field = ''
+    for index, date in enumerate(dates):
+        dates_field += f'{date}\n'
+        scores_field += f'{"{:,}".format(total_scores[index])}\n'
+        if (index+1) % 20 == 0:
+            description_data = "Sorted from earliest to most recent."
+            fields_data = [
+                {
+                    "name": "Date",
+                    "value": dates_field,
+                    "inline": True
+                },
+                {
+                    "name": "Scores",
+                    "value": scores_field,
+                    "inline": True
+                }
+            ]
+            embed_pages.append(create_embed(title_guild, description=description_data, color=color_guild, thumbnail=thumbnail_guild, field=fields_data))
+            dates_field = ''
+            scores_field = ''
+    if scores_field != '':
+        description_data = "Sorted from earliest to most recent."
+        fields_data = [
+            {
+                "name": "Date",
+                "value": dates_field,
+                "inline": True
+            },
+            {
+                "name": "Scores",
+                "value": scores_field,
+                "inline": True
+            }
+        ]
+        embed_pages.append(create_embed(title_guild, description=description_data, color=color_guild, thumbnail=thumbnail_guild, field=fields_data))
+        scores_field = ''
+        dates_field = ''
+    paginator = Paginator.create_from_embeds(bot, *embed_pages, timeout=180)
+    await paginator.send(ctx)
+
+    x = dates
+    y = total_scores
+    plot_image = bytesio_to_image(plot_to_image(x, y))
+    image_bytes = io.BytesIO()
+    plot_image.save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+    plot_dfile = File(image_bytes, file_name='image.png')
+    plot_dfile_to_ctx = await ctx.send(file=plot_dfile)
+    plot_url = plot_dfile_to_ctx.attachments[0].url
+    embed_graph.set_image(url=plot_url)
+    await plot_dfile_to_ctx.delete()
+    
+    paginator.pages[0] = embed_graph
+    await paginator.message.edit(embed=paginator.pages[0])
 
 bot.start(TOKEN)
