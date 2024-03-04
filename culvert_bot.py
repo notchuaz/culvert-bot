@@ -70,6 +70,8 @@ SAGA_SERVER_ID = os.getenv('SAGA_SERVER_ID')
 CULVERT_REMINDER_CH_ID = os.getenv('CULVERT_REMINDER_CH_ID')
 CULVERT_RAID_BOSS = os.getenv('CULVERT_RAID_BOSS')
 CULVERT_RAID_ASSISTANT = os.getenv('CULVERT_RAID_ASSISTANT')
+ADMIN_ROLE = os.getenv('ADMIN_ROLE')
+MOD_ROLE = os.getenv('MOD_ROLE')
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -780,7 +782,7 @@ async def updateAll(
                                 updated_member = collection_names.update_one(query, member_data)
                         else:
                             for role in ctx.guild.get_member(member["discord_id"]).roles:
-                                if role.id == 1209284355063676928 or role.id == 1209283608398012436:
+                                if role.id == ADMIN_ROLE or role.id == MOD_ROLE:
                                     admin = 1
                             if admin != 1:
                                 if place == 1:
