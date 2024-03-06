@@ -380,7 +380,6 @@ async def view_member(ctx: SlashContext):
         }
     ]
     embeds_pages.append(create_embed(title_details, color=color_details, thumbnail=thumbnail_details, field=fields_details))
-
     names_list = [doc["name"] for doc in names_sorted]
     names_field = ""
     for index, name in enumerate(names_list):
@@ -407,9 +406,9 @@ async def view_member(ctx: SlashContext):
                 ]
         embeds_pages.append(create_embed(title_details, description=description_details, color=color_details, thumbnail=thumbnail_details, field=fields_names))
         names_field = ''
-
-        paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=120)
-        await paginator.send(ctx)
+    
+    paginator = Paginator.create_from_embeds(bot, *embeds_pages, timeout=120)
+    await paginator.send(ctx)
 
 @culvert_cmd.subcommand(
     sub_cmd_name="ping", 
