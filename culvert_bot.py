@@ -1493,7 +1493,7 @@ async def search_by_date(ctx: SlashContext, date: str):
     options=[
         SlashCommandOption(
             name="class_name",
-            description="Type exactly as displayed in the guild window, i.e., Arch Mage (F/P)",
+            description="Enter class name.",
             required=True,
             type=OptionType.STRING
         )
