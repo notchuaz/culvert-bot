@@ -1500,7 +1500,47 @@ async def search_by_date(ctx: SlashContext, date: str):
     ]
 )
 async def search_class(ctx: SlashContext, class_name: str):
-    class_scores_data = collection_scores.find({"class": class_name.lower()}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
+    def expand_abbreviation(abbrev):
+        abbrev = abbrev.lower()
+        return abbreviation_map.get(abbrev, None)
+    abbreviation_map = {
+        "drk": "dark knight",
+        "pally": "paladin",
+        "bish": "bishop",
+        "bishy": "bishop",
+        "fp": "arch mage (f/p)",
+        "il": "arch mage (i/l)",
+        "nl": "night lord",
+        "nightlord": "night lord",
+        "shad": "shadower",
+        "bm": "bowmaster",
+        "mm": "marksman",
+        "bucc": "buccaneer",
+        "dual blade": "blade master",
+        "db": "blade master",
+        "cm": "cannon master",
+        "pf": "pathfinder",
+        "bw": "blaze wizard",
+        "tb": "thunder breaker",
+        "dw": "dawn warrior",
+        "wa": "wind archer",
+        "nw": "night walker",
+        "mech": "mechanic",
+        "bam": "battle mage",
+        "ds": "demon slayer",
+        "da": "demon avenger",
+        "wh": "wild hunter",
+        "merc": "mercedes",
+        "lumi": "luminous",
+        "ab": "angelic buster",
+        "bt": "beast tamer",
+        "hoy": "hoyoung"
+    }
+    search_name = class_name.lower()
+    abbrev_name = expand_abbreviation(search_name)
+    if abbrev_name is not None:
+        search_name = abbrev_name
+    class_scores_data = collection_scores.find({"class": search_name}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
     class_scores_list = [{"name": doc["name"], "class": doc["class"], "level": doc["level"], "score": doc["score"], "date": doc["date"]} for doc in class_scores_data]
     if class_scores_list:
         embeds_pages = []
@@ -1508,10 +1548,10 @@ async def search_class(ctx: SlashContext, class_name: str):
         names_field = ''
         levels_field = ''
         scores_field = ''
-        title_class = f"Top Culvert Scores for all {class_name.title()}s in the Guild"
+        title_class = f"Top Culvert Scores for all {search_name.title()}s in the Guild"
         description_class = f"These were scored on {datetime.strptime(class_scores_list[0]['date'][-1], '%Y-%m-%d').strftime('%B %d, %Y')}."
         color_class = "#2bff00"
-        thumbnail_class = embed_thumbnails[class_name.lower()]
+        thumbnail_class = embed_thumbnails[search_name]
         for index, member in enumerate(class_scores_list_sorted):
             member_case_correction = collection_names.find_one({"name_lower": member["name"].lower()})
             levels_field += f'{member["level"]}\n'
