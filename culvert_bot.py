@@ -222,7 +222,7 @@ async def remove_member(ctx: SlashContext, guild_member: str):
             type=OptionType.STRING
         ),
         SlashCommandOption(
-            name="guild_member_class_updated",
+            name="class_updated",
             description="Updated member class. Enter as it would appear on the guild page, i.e., Arch Mage (F/P).",
             required=False,
             type=OptionType.STRING
