@@ -73,6 +73,9 @@ CULVERT_RAID_BOSS = os.getenv('CULVERT_RAID_BOSS')
 CULVERT_RAID_ASSISTANT = os.getenv('CULVERT_RAID_ASSISTANT')
 ADMIN_ROLE = os.getenv('ADMIN_ROLE')
 MOD_ROLE = os.getenv('MOD_ROLE')
+ALLOWED_CHANNELS_STR = os.getenv('ALLOWED_CHANNELS')
+ALLOWED_CHANNELS = ALLOWED_CHANNELS_STR.split(',') if ALLOWED_CHANNELS_STR else []
+
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -93,6 +96,8 @@ member_cmd = SlashCommand(name="member", description="Add, remove, update, or se
 culvert_cmd = SlashCommand(name="culvert", description="Update, remove, or change culvert scores for members.", default_member_permissions=Permissions.ADMINISTRATOR, scopes=[SAGA_SERVER_ID, TEST_SERVER_ID])
 search_cmd = SlashCommand(name="saga", description="Search the database by member, date, or class for culvert scores.", scopes=[SAGA_SERVER_ID, TEST_SERVER_ID])
 # test_cmd = SlashCommand(name="test", scopes=[])
+
+allowed_channels = [int(channel_id) for channel_id in ALLOWED_CHANNELS if channel_id.isdigit()]
 
 @listen()
 async def on_ready():
@@ -1254,6 +1259,9 @@ async def download(ctx: SlashContext):
     ]
 )
 async def search_by_member(ctx: SlashContext, name: str):
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("This command isn't allowed in this channel. Try these channels instead: <#1163044373785759794>, <#1162981223526830122>, <#1166257483535355914>, <#1169561663553404938>, <#1171276796436680794>, <#1181487073262305291>", ephemeral=True)
+        return -1
     member = collection_scores.find_one({"name": name.lower()})
     if member:
         player_scores_data = collection_scores.find({}, {"name": 1, "class": 1, "level": 1, "score": 1, "date": 1})
@@ -1379,6 +1387,9 @@ async def search_by_date(ctx: SlashContext, date: str):
     # thumbnail_fail = embed_thumbnails["sugar_fail"]
     # embed_fail = create_embed(title_fail, color=color_fail, description=description_fail, thumbnail=thumbnail_fail)
     # await ctx.send(embed=embed_fail)
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("This command isn't allowed in this channel. Try these channels instead: <#1163044373785759794>, <#1162981223526830122>, <#1166257483535355914>, <#1169561663553404938>, <#1171276796436680794>, <#1181487073262305291>", ephemeral=True)
+        return -1
     await ctx.defer()
     def is_valid_date(date_str):
         try:
@@ -1503,6 +1514,9 @@ async def search_class(ctx: SlashContext, class_name: str):
     def expand_abbreviation(abbrev):
         abbrev = abbrev.lower()
         return abbreviation_map.get(abbrev, None)
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("This command isn't allowed in this channel. Try these channels instead: <#1163044373785759794>, <#1162981223526830122>, <#1166257483535355914>, <#1169561663553404938>, <#1171276796436680794>, <#1181487073262305291>", ephemeral=True)
+        return -1
     abbreviation_map = {
         "drk": "dark knight",
         "pally": "paladin",
@@ -1625,6 +1639,9 @@ async def search_class(ctx: SlashContext, class_name: str):
     sub_cmd_description="Lists the dates where culvert scores were logged."
 )
 async def search_list(ctx: SlashContext):
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("This command isn't allowed in this channel. Try these channels instead: <#1163044373785759794>, <#1162981223526830122>, <#1166257483535355914>, <#1169561663553404938>, <#1171276796436680794>, <#1181487073262305291>", ephemeral=True)
+        return -1
     player_score_data = collection_scores.find({}, {"date": 1})
     player_score_list = [{"date": doc["date"]} for doc in player_score_data]
     embed_pages = []
@@ -1671,6 +1688,9 @@ async def search_list(ctx: SlashContext):
     sub_cmd_description="Displays the overall score of the entire guild over time. Members who have left are not included."
 )
 async def search_guild(ctx: SlashContext):
+    if ctx.channel.id not in allowed_channels:
+        await ctx.send("This command isn't allowed in this channel. Try these channels instead: <#1163044373785759794>, <#1162981223526830122>, <#1166257483535355914>, <#1169561663553404938>, <#1171276796436680794>, <#1181487073262305291>", ephemeral=True)
+        return -1
     player_score_data = collection_scores.find({}, {"score": 1, "date": 1})
     player_score_list = [{"score": doc["score"], "date": doc["date"]} for doc in player_score_data]
     dates = set()
