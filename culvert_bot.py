@@ -6,6 +6,9 @@ import json
 from matplotlib.image import thumbnail
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import socket
+import asyncio
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from dotenv import load_dotenv
 from interactions import Client, Intents, OptionType, Embed, File, Permissions, SlashContext, SlashCommand, SlashCommandOption, listen, slash_default_member_permission
@@ -16,6 +19,7 @@ from openai_generator import story_generator
 from pymongo.mongo_client import MongoClient
 from datetime import datetime
 from PIL import Image
+from collections import deque, Counter
 
 def plot_to_image(x, y):
     fig, ax = plt.subplots()
@@ -63,6 +67,77 @@ def create_embed(title, description="", color="", author="", thumbnail="", foote
             embed.add_field(name=item["name"], value=item["value"], inline=item["inline"])  
     return embed
 
+def _measure_latency_sync(host, port, timeout):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        sock.connect((host, port))
+
+async def measure_latency(host, port, timeout=3):
+    loop = asyncio.get_running_loop()
+    start_time = loop.time()
+    await loop.run_in_executor(None, _measure_latency_sync, host, port, timeout)
+    latency = (loop.time() - start_time) * 1000
+    return latency
+
+async def continuous_ping(servers, delay, ping_ch, bot):
+    global average_latency, top_5_history
+    latencies = {server[0]: deque(maxlen=20) for server in servers}
+    message = None  # Reference to the Discord message to be sent/edited
+
+    while True:
+        tasks = [measure_latency(host, port) for _, (host, port) in servers]
+        results = await asyncio.gather(*tasks)
+
+        valid_latencies = [latency for latency in results if latency != float('inf')]
+        if valid_latencies:
+            average_latency = sum(valid_latencies) / len(valid_latencies)
+        else:
+            average_latency = float('inf')
+
+        for (server_number, _), latency in zip(servers, results):
+            latencies[server_number].append(latency)
+            sd = np.std([l for l in latencies[server_number] if l != float('inf')]) if latencies[server_number] else float('inf')
+            latest_stdev[server_number] = sd
+
+        current_top_5 = sorted(latest_stdev.items(), key=lambda x: x[1], reverse=True)[:5]
+        for server_number, _ in current_top_5:
+            top_5_history.append(server_number)
+        history_count = Counter(top_5_history)
+
+        title_lag = "Best Channels for Fatal Lag"
+        description_lag = "I measured each channel's instability so you don't have to! Top 5 most instable channels listed below. Obviously there are more factors that contribute to a long fatal duration, but hopefully this gives you a better idea. **This is currently experimental and I would like to have your feedback!**\n\nLet me know here: https://discord.com/channels/1162977790832955432/1216100791182426252 \n\n The channels with the most appearances have been unstable the longest in the past 5 minutes."
+        color_lag = "#89CFF0"
+        thumbnail_lag = embed_thumbnails["sugar_done"]
+        top5 = ""
+        appearances5 = ""
+        for server_number, stddev in current_top_5:
+            appearances = history_count[server_number]
+            top5 += f"Channel {server_number}\n"
+            appearances5 += f"{appearances}\n"
+
+        field_lag = [
+            {
+                "name": "Top 5 Channels to Run",
+                "value": top5,
+                "inline": True
+            },
+            {
+                "name": "Appearance (last 5 minutes)",
+                "value": appearances5,
+                "inline": True
+            }
+        ]
+
+        embed_lag = create_embed(title=title_lag, description=description_lag, color=color_lag, thumbnail=thumbnail_lag, field=field_lag)
+
+        channel = bot.get_channel(ping_ch)
+        if message is None:
+            message = await channel.send(embed=embed_lag)
+        else:
+            await message.edit(embed=embed_lag)
+
+        await asyncio.sleep(delay)
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 URI = os.getenv('APP_URI')
@@ -75,7 +150,53 @@ ADMIN_ROLE = os.getenv('ADMIN_ROLE')
 MOD_ROLE = os.getenv('MOD_ROLE')
 ALLOWED_CHANNELS_STR = os.getenv('ALLOWED_CHANNELS')
 ALLOWED_CHANNELS = ALLOWED_CHANNELS_STR.split(',') if ALLOWED_CHANNELS_STR else []
+FATAL_CHANNEL = os.getenv('FATAL_CHANNEL')
 
+servers = [
+    (1, ("35.155.204.207", 8585)),
+    (2, ("52.26.82.74", 8585)),
+    (3, ("34.217.205.66", 8585)),
+    (4, ("35.161.183.101", 8585)),
+    (5, ("54.218.157.183", 8585)),
+    (6, ("52.25.78.39", 8585)),
+    (7, ("54.68.160.34", 8585)),
+    (8, ("34.218.141.142", 8585)),
+    (9, ("52.33.249.126", 8585)),
+    (10, ("54.148.170.23", 8585)),
+    (11, ("54.201.184.26", 8585)),
+    (12, ("54.191.142.56", 8585)),
+    (13, ("52.13.185.207", 8585)),
+    (14, ("34.215.228.37", 8585)),
+    (15, ("54.187.177.143", 8585)),
+    (16, ("54.203.83.148", 8585)),
+    (17, ("54.148.188.235", 8585)),
+    (18, ("52.43.83.76", 8585)),
+    (19, ("54.69.114.137", 8585)),
+    (20, ("54.148.137.49", 8585)),
+    (21, ("54.212.109.33", 8585)),
+    (22, ("44.230.255.51", 8585)),
+    (23, ("100.20.116.83", 8585)),
+    (24, ("54.188.84.22", 8585)),
+    (25, ("34.215.170.50", 8585)),
+    (26, ("54.184.162.28", 8585)),
+    (27, ("54.185.209.29", 8585)),
+    (28, ("52.12.53.225", 8585)),
+    (29, ("54.189.33.238", 8585)),
+    (30, ("54.188.84.238", 8585)),
+    (31, ("44.234.162.14", 8585)),
+    (32, ("44.234.162.13", 8585)),
+    (33, ("44.234.161.92", 8585)),
+    (34, ("44.234.161.48", 8585)),
+    (35, ("44.234.160.137", 8585)),
+    (36, ("44.234.161.28", 8585)),
+    (37, ("44.234.162.100", 8585)),
+    (38, ("44.234.161.69", 8585)),
+    (39, ("44.234.162.145", 8585)),
+    (40, ("44.234.162.130", 8585))
+]
+latest_stdev = {}
+average_latency = 0
+top_5_history = deque(maxlen=75)
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -103,6 +224,7 @@ allowed_channels = [int(channel_id) for channel_id in ALLOWED_CHANNELS if channe
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
+    asyncio.create_task(continuous_ping(servers, 20, FATAL_CHANNEL, bot))
 
 # @test_cmd.subcommand(
 #     sub_cmd_name="addrole",
