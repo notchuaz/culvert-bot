@@ -105,7 +105,7 @@ async def continuous_ping(servers, delay, ping_ch, bot):
         history_count = Counter(top_5_history)
 
         title_lag = "Best Channels for Fatal Lag"
-        description_lag = "I measured each channel's instability so you don't have to! Top 5 most unstable channels listed below. Obviously there are more factors that contribute to a long fatal duration, but hopefully this gives you a better idea. **This is currently experimental and I would like to have your feedback!**\n\nLet me know here: https://discord.com/channels/1162977790832955432/1216100791182426252 \n\n The channels with the most appearances have been unstable the longest in the past 5 minutes."
+        description_lag = "I measured each channel's instability so you don't have to! Top 5 most unstable channels listed below. Obviously there are more factors that contribute to a long fatal duration, but hopefully this gives you a better idea. **This is currently experimental and I would like to have your feedback!**\n\nLet me know here: https://discord.com/channels/1162977790832955432/1216100791182426252 \n\n The channels with the most appearances have been unstable the longest in the past 5 minutes. The bot updates every 20s, so an appearance of **15** means the channel has been unstable for all of the past 5 minutes."
         color_lag = "#89CFF0"
         thumbnail_lag = embed_thumbnails["sugar_done"]
         top5 = ""
