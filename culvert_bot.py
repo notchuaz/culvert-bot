@@ -74,9 +74,12 @@ def _measure_latency_sync(host, port, timeout):
 
 async def measure_latency(host, port, timeout=3):
     loop = asyncio.get_running_loop()
-    start_time = loop.time()
-    await loop.run_in_executor(None, _measure_latency_sync, host, port, timeout)
-    latency = (loop.time() - start_time) * 1000
+    try:
+        start_time = loop.time()
+        await loop.run_in_executor(None, _measure_latency_sync, host, port, timeout)
+        latency = (loop.time() - start_time) * 1000
+    except socket.timeout:
+        latency = float('inf')
     return latency
 
 async def continuous_ping(servers, delay, ping_ch, bot):
