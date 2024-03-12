@@ -1005,7 +1005,7 @@ async def updateAll(
                 result = collection_scores.insert_one(
                     {
                         "name": entry[1].lower(),
-                        "class": entry[2][1],
+                        "class": entry[2][1].lower(),
                         "level": entry[2][2],
                         "score": [entry[2][3]],
                         "date": [date_to_add]
