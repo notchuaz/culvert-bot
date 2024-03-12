@@ -98,20 +98,21 @@ async def continuous_ping(servers, delay, ping_ch, bot):
                 else:
                     status += "\U00002B1B"
             return status
-    def standardize_stability(stdev):
-        if stdev <= 1:
-            return "\U0001F7E6\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B"
-        elif stdev >= 10:
-            return "\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6"
-        else:
-            status = ""
-            blue_squares_num = math.floor(stdev)
-            for index in range(1, 11):
-                if index <= blue_squares_num:
-                    status += "\U0001F7E6"
-                else:
-                    status += "\U00002B1B"
-            return status
+def standardize_stability(stdev):
+    if stdev < 4:
+        return "\U0001F7E6" + "\U00002B1B" * 9
+    elif 4 <= stdev < 6:
+        return "\U0001F7E6" * 2 + "\U00002B1B" * 8
+    elif 6 <= stdev <= 10:
+        blue_squares_num = 2 + math.ceil(4 * (stdev - 6) / (10 - 6))
+        status = "\U0001F7E6" * blue_squares_num + "\U00002B1B" * (10 - blue_squares_num)
+        return status
+    elif 10 < stdev <= 12:
+        return "\U0001F7E6" * 8 + "\U00002B1B" * 2
+    elif 12 < stdev <= 14:
+        return "\U0001F7E6" * 9 + "\U00002B1B"
+    else:
+        return "\U0001F7E6" * 10
     global average_latency, top_5_history, bottom_5_history
     latencies = {server[0]: deque(maxlen=20) for server in servers}
     message = None  # Reference to the Discord message to be sent/edited
