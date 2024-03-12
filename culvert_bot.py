@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import socket
 import asyncio
+import math
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from dotenv import load_dotenv
 from interactions import Client, Intents, OptionType, Embed, File, Permissions, SlashContext, SlashCommand, SlashCommandOption, listen, slash_default_member_permission
@@ -83,7 +84,35 @@ async def measure_latency(host, port, timeout=3):
     return latency
 
 async def continuous_ping(servers, delay, ping_ch, bot):
-    global average_latency, top_5_history
+    def standardize_instability(stdev):
+        if stdev <= 10:
+            return "\U0001F7E7\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B"
+        elif stdev >= 24:
+            return "\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7\U0001F7E7"
+        else:
+            status = ""
+            orange_squares_num = math.floor(1 + ((10-1)) * (stdev-10) / (24-10))
+            for index in range(1, 11):
+                if index <= orange_squares_num:
+                    status += "\U0001F7E7"
+                else:
+                    status += "\U00002B1B"
+            return status
+    def standardize_stability(stdev):
+        if stdev <= 1:
+            return "\U0001F7E6\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B\U00002B1B"
+        elif stdev >= 10:
+            return "\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6\U0001F7E6"
+        else:
+            status = ""
+            blue_squares_num = math.floor(stdev)
+            for index in range(1, 11):
+                if index <= blue_squares_num:
+                    status += "\U0001F7E6"
+                else:
+                    status += "\U00002B1B"
+            return status
+    global average_latency, top_5_history, bottom_5_history
     latencies = {server[0]: deque(maxlen=20) for server in servers}
     message = None  # Reference to the Discord message to be sent/edited
 
@@ -103,33 +132,65 @@ async def continuous_ping(servers, delay, ping_ch, bot):
             latest_stdev[server_number] = sd
 
         current_top_5 = sorted(latest_stdev.items(), key=lambda x: x[1], reverse=True)[:5]
+        current_bottom_5 = sorted(latest_stdev.items(), key=lambda x: x[1])[:5]
         for server_number, _ in current_top_5:
             top_5_history.append(server_number)
-        history_count = Counter(top_5_history)
+        for server_number, _ in current_bottom_5:
+            bottom_5_history.append(server_number)
+
+        unstable_history_count = Counter(top_5_history)
+        stable_history_count = Counter(bottom_5_history)
 
         title_lag = "Best Channels for Fatal Lag"
-        description_lag = "I measured each channel's instability so you don't have to! Top 5 most unstable channels listed below. Obviously there are more factors that contribute to a long fatal duration, but hopefully this gives you a better idea. **This is currently experimental and I would like to have your feedback!**\n\nLet me know here: https://discord.com/channels/1162977790832955432/1216100791182426252 \n\n The channels with the most appearances have been unstable the longest in the past 5 minutes. The bot updates every 20s, so an appearance of **15** means the channel has been unstable for all of the past 5 minutes."
+        description_lag = "This will show the most stable and unstable channels. The more unstable a channel, the laggier it will be. Obviously there are more factors that contribute to a long fatal duration, but hopefully this gives you a better idea. \n\nFeedback or suggestions: https://discord.com/channels/1162977790832955432/1216100791182426252 \n\n The channels with the highest frequency have been unstable the longest in the past 5 minutes. The bot updates **itself** every 20s, so an appearance of **15** means the channel has been unstable for all of the past 5 minutes. \n\n The stability bars shown for top 5 channels to run and top 5 stables channels use a different set of ranges and are **unrelated** to each other."
         color_lag = "#89CFF0"
         thumbnail_lag = embed_thumbnails["sugar_done"]
-        top5 = ""
-        appearances5 = ""
-        shouldrun = False
-        for server_number, stddev in current_top_5:
-            appearances = history_count[server_number]
+        top5, appearances5, instability_top5 = "", "", ""
+        bottom5, appearances_bottom5, instability_bottom5 = "", "", ""
+
+        for server_number, stdev in current_top_5:
+            appearances = unstable_history_count[server_number]
             top5 += f"Channel {server_number}\n"
             appearances5 += f"{appearances}\n"
-            print(stddev)
+            instability_top5 += f"{standardize_instability(stdev)}\n"
+
+        for server_number, stdev in current_bottom_5:
+            appearances = stable_history_count[server_number]
+            bottom5 += f"Channel {server_number}\n"
+            appearances_bottom5 += f"{appearances}\n"
+            instability_bottom5 += f"{standardize_stability(stdev)}\n"
+            print(stdev)
         print("\n")
 
         field_lag = [
             {
                 "name": "Top 5 Channels to Run",
-                "value": top5,
+                "value": top5 or "N/A",
                 "inline": True
             },
             {
-                "name": "Appearance (last 5 minutes)",
-                "value": appearances5,
+                "name": "Frequency",
+                "value": appearances5 or "N/A",
+                "inline": True
+            },
+            {
+                "name": "Stability (Higher is better)",
+                "value": instability_top5 or "N/A",
+                "inline": True
+            },
+            {
+                "name": "Top 5 Stable Channels",
+                "value": bottom5 or "N/A",
+                "inline": True,
+            },
+            {
+                "name": "Frequency",
+                "value": appearances_bottom5 or "N/A",
+                "inline": True
+            },
+            {
+                "name": "Stability (Lower is better)",
+                "value": instability_bottom5 or "N/A",
                 "inline": True
             }
         ]
@@ -203,6 +264,7 @@ servers = [
 latest_stdev = {}
 average_latency = 0
 top_5_history = deque(maxlen=75)
+bottom_5_history = deque(maxlen=75)
 
 with open("embed_thumbnails.json", "r") as file:
     embed_thumbnails = json.load(file)
@@ -230,7 +292,7 @@ allowed_channels = [int(channel_id) for channel_id in ALLOWED_CHANNELS if channe
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
-    asyncio.create_task(continuous_ping(servers, 20, FATAL_CHANNEL, bot))
+    asyncio.create_task(continuous_ping(servers, 20, 1206497400684945438, bot))
 
 # @test_cmd.subcommand(
 #     sub_cmd_name="addrole",
