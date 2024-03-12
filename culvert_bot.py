@@ -292,7 +292,7 @@ allowed_channels = [int(channel_id) for channel_id in ALLOWED_CHANNELS if channe
 async def on_ready():
     print("Ready to go!")
     print(f"This bot is owned by {bot.owner}")
-    asyncio.create_task(continuous_ping(servers, 20, 1206497400684945438, bot))
+    asyncio.create_task(continuous_ping(servers, 20, FATAL_CHANNEL, bot))
 
 # @test_cmd.subcommand(
 #     sub_cmd_name="addrole",
